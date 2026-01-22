@@ -113,7 +113,7 @@ def find_region_by_coord(self, lat, lon):
 
 주의할 것은 **region_id**입니다. 이미 저희 프로젝트에서는 **온보딩**과 같은 기능에 이 필드가 절찬리에 이용되고 있기 때문에 이걸 갈아엎으면 프론트에서도 다 다시 짜야됩니다. 
 
-**region**
+### GET /region/
 
 - [GET] **/api/region/** (통합 검색 및 조회)
     
