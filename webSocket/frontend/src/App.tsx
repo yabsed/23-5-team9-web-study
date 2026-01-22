@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
-// 1. Types
+// ------------------ Message Schema ------------------
+
 interface SendMessageRequest {
   sender: string;
   receiver: string;
   message: string;
 }
 
-// 2. Styles 
+// ------------------ Styles ------------------
 const S = {
   // general
   container: "w-full max-w-md bg-white rounded-2xl shadow-xl p-6",
@@ -27,20 +28,36 @@ const S = {
 
 function App() {
   // ------------------ Logic & State ------------------
-  const [myId, setMyId] = useState<string>("user1");
-  const [targetId, setTargetId] = useState<string>("user2");
+  // sender, receiver
+  const [senderId, setSenderId] = useState<string>("user1");
+  const [receiverId, setReceiverId] = useState<string>("user2");
+  // connection
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  // message information
   const [logs, setLogs] = useState<string[]>([]);
   const [inputMessage, setInputMessage] = useState<string>("");
+  // webSocket
   const socketRef = useRef<WebSocket | null>(null);
 
+  // ------------------ Helper ------------------
+  // modify setLogs
   const addLog = (msg: string) => setLogs((prev) => [...prev, msg]);
 
+  // ------------------ WebSocekt ------------------
   const connectSocket = () => {
     if (socketRef.current) return;
-    const socket = new WebSocket(`ws://localhost:8000/ws/${myId}`);
-    socket.onopen = () => { setIsConnected(true); addLog(`✅ 시스템: ${myId} 접속`); };
+    // Receiver is connected via WebSocket
+    const socket = new WebSocket(`ws://localhost:8000/ws/${senderId}`);
+    // if new socket 
+    // then (1) modify isConnected
+    //      (2) update logs        
+    socket.onopen = () => { setIsConnected(true); addLog(`✅ 시스템: ${senderId} 접속`); };
+    // if new message
+    // then (1) update logs
     socket.onmessage = (e) => addLog(`📩 ${e.data}`);
+    // if close socket
+    // then (1) modify isConnected 
+    //      (2) nullify socketRef.current  
     socket.onclose = () => { setIsConnected(false); socketRef.current = null; };
     socketRef.current = socket;
   };
@@ -51,10 +68,17 @@ function App() {
     setIsConnected(false);
   };
 
+  // disconnect socket 
+  // when component unmounts
+  useEffect(() => { return () => disconnectSocket(); }, []);
+
+  // ------------------ API call ------------------
+
   const sendMessage = async () => {
     if (!inputMessage) return;
     try {
-      const payload: SendMessageRequest = { sender: myId, receiver: targetId, message: inputMessage };
+      // Sender Calls Server using API CALL
+      const payload: SendMessageRequest = { sender: senderId, receiver: receiverId, message: inputMessage };
       await fetch("http://localhost:8000/send-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,18 +89,16 @@ function App() {
     } catch (e) { addLog("⚠️ 전송 실패"); }
   };
 
-  useEffect(() => { return () => disconnectSocket(); }, []);
-
-  // ------------------ UI Views (Logic Focused) ------------------
-
-  // (A) 설정 패널
+  // ------------------ UI Views ------------------
+  // Setting Pannel
   const viewConnection = (
     <div className={S.panel}>
       <div className="flex justify-between mb-4">
         <div className="flex items-center gap-3">
           <span className="text-sm font-bold text-gray-600">내 ID</span>
-          <input className={S.inputSm} value={myId} onChange={(e) => setMyId(e.target.value)} disabled={isConnected} />
+          <input className={S.inputSm} value={senderId} onChange={(e) => setSenderId(e.target.value)} disabled={isConnected} />
         </div>
+        {/* connectSocket, disconnectSocket */}
         <button 
           onClick={isConnected ? disconnectSocket : connectSocket} 
           className={`${S.btnBase} ${isConnected ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"}`}
@@ -86,12 +108,11 @@ function App() {
       </div>
       <div className="flex items-center gap-3">
         <span className="text-sm font-bold text-gray-600">상대방</span>
-        <input className={S.inputSm} value={targetId} onChange={(e) => setTargetId(e.target.value)} />
+        <input className={S.inputSm} value={receiverId} onChange={(e) => setReceiverId(e.target.value)} />
       </div>
     </div>
   );
-
-  // (B) 로그 창
+  // Log
   const viewLogs = (
     <div className={S.logBox}>
       {logs.map((log, i) => (
@@ -101,8 +122,7 @@ function App() {
       ))}
     </div>
   );
-
-  // (C) 입력 창
+  // Input
   const viewInput = (
     <div className="flex gap-2">
       <input 
@@ -113,12 +133,12 @@ function App() {
         placeholder="메시지를 입력하세요..." 
         disabled={!isConnected} 
       />
+      {/* sendMessage */}
       <button onClick={sendMessage} disabled={!isConnected} className={S.btnSend}>
         전송
       </button>
     </div>
   );
-
   return (
     <div className="flex justify-center min-h-screen bg-gray-100 p-4 font-sans">
       <div className={S.container}>
