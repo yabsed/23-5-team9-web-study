@@ -195,8 +195,6 @@ const socketRef = useRef<WebSocket | null>(null);
 
 이 구조는 채팅뿐만 아니라 **실시간 알림(Notification)** 시스템을 구축할 때 가장 정석적으로 사용되는 패턴입니다.
 
-**추가로 필요하신 부분이 있다면 말씀해 주세요. (예: 이 코드를 실행했을 때 발생하는 CORS 문제 해결법 등)**
-
 
 ## 5. How to Run
 
